@@ -1,0 +1,9 @@
+
+.orderList{width:100%;}
+.orderList th{font-weight:600;height:28px;background:#ececec; text-align:center;}
+.orderList td{text-align:center;padding:10px 2px;border-bottom: #cc3a4d 1px dashed;}
+.orderList td dt{width:100px;height:85px;border: #44cc21 1px solid;float:left;}
+.orderList td dd{width:300px;float:left;margin-left:100px;line-height:16px; text-align:left;padding-top:30px;}
+
+
+

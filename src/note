@@ -1,0 +1,140 @@
+servlet中到底要干些啥
+1、接受参数
+2、调用相关的业务逻辑（业务逻辑我们通常会封装在一个叫做XxxService的类中）
+3、根据Service（业务逻辑）返回的结果，做出相应的响应，响应包括三种
+    -转发，当需要有数据传递的到目标页面的时候，需要转发，或者是访问WEB-INF下的页面的时候
+    -重定向，只是进行页面的跳转，不需要传递数据的时候
+    -通过respone对象输出数据，常用的数据格式就是json数据，在使用ajax技术的时候，一定要用这种方式。
+
+业务逻辑：
+    发红包的过程：两个操作，从我的账户里减去钱，然后再给你的账户价钱
+    BankDao dao= new BankDaoImpl();
+    dao.min();
+    dao.add();
+
+
+以后项目的包
+-src
+    -com
+        -hwua
+            -mall
+                -controller(放servlet)
+                -dao(dao的接口)
+                -daoImpl(dao的实现)
+                -service(service业务逻辑接口)
+                -serviceImpl(service业务逻辑实现)
+                -entity(实体类)
+                -util(工具类)
+                -filter(过滤器，字符编码过滤器，登录验证过滤器)
+                -test(存放测试类)
+-web
+    -static
+        -js
+        -css
+        -img
+    -WEB-INF
+        -lib
+        -web.xml
+        -view(存放登陆后才可以见到的页面)
+    -xxx.jsp(可以不登录就浏览的页面)
+
+
+
+session的创建时机:
+一个项目刚刚启动，第一个访问的页面是一个jsp页面
+那么jsp中就会产生一个session内置对象，这个时候，session就已经创建出来了
+如果访问的第一个页面是一个servlet，那么之后再service方法中
+调用req.getSession方法的时候，才会生成一个session对象
+无论哪一种方式，生成之后，都会把session的唯一标识sessionid通过response对象
+写入打浏览区的cookie中。这时候才会在浏览器的控制台中看到一个叫做JSESSIONID的cookie
+
+
+session超时
+session是存储用户信息的对象，他是运行的服务器端。但是服务器内存有限
+不会让session一直存活下去，到了一定的时候，如果这期间没有任何请求访问这个session
+那么容器就会把这个session干掉。默认是30min
+可以在web.xml中设置session超时的时间
+注意这个实效的时间，不是指从session创建开始计算
+而是从最后一次访问session开始计算，如果xx分钟内没有操作过session，容器就把这个session销毁
+
+
+---------------
+filter之间先后初始化的顺序和执行的顺序
+1、多个filter之间，初始化顺序和在web.xml中注册的顺序无关
+2、执行顺序与web.xml中注册的顺序有关，按照注册的从上到下的顺序依次执行
+
+
+在filter和servlet之间，是filter先初始化，然后servlet再初始化
+
+--------------------------
+监听器，监听谁，监听什么事情
+监听对象：ServletContext（applicaiton），HttpSession（session），ServletRequest(HttpServletRequeste)
+监听的事件： applicaiton的创建和销毁，application属性的增加、删除和替换
+           session的创建和销毁，session属性的增加、删除和替换
+           request的创建和销毁，request属性的增加、删除和替换
+
+
+关于session创建的时机
+1、如果访问的是jsp页面，那么由于session就是jsp的内置对象，所以会立刻创建
+2、如果访问的是servlet，那么之后在调用req.getSession()的时候才会创建session对象
+
+-----------关于分页------------
+为什么要分页
+1、如果不分页，就会在浏览器上一次性显示出非常多的数据，导致浏览器解析html以及渲染样式过程十分缓慢
+2、如果不分页，在后台的角度，查询出非常多的数据，也占据大量内存，有可能我们关注的数据只是前几条，那么后续的数据没有被采纳
+但是也加载到了内存中，是一种对资源的极大浪费。
+
+要分页，抽象分页的元素
+首页  上一页  下一页  尾页  一共x页/共yyy条
+
+但是浏览器客户端传递到后台的数据能有哪些？
+从浏览器端，知道你要访问第几页？把这个变量叫做page
+也可以获得每页多少条数据 把这个变量叫做pageSize
+
+下面研究一下数据库端的分页（MYSQL）
+
+
+--------关于AJAX-----------
+对于ajax来说，首先记住两个关键字：不刷新，异步
+
+一个ajax请求到达服务器端之后，就必须使用response对象输出数据
+不能再进行转发和重定向
+
+1、异步注册，严重用户是否重复
+2、异步方式登录
+3、级联下拉菜单（省市区）
+4、异步方式的分页
+
+
+---servlet的高级抽象---
+让一个servlet能接受多个请求
+登录：/user?action=login
+注册：/user?action=regist
+退出:/user?action=logout
+
+在一个servlet中，就就有login，regist，logout三个方法
+login，regist，logout这三个方法只要有request和response对象作为入参，
+就可以完成全部功能
+
+
+-----------MVC设计架构------------
+M：model 模型层，代表着entity，dao，daoImpl，service，serviceImpl
+V：view 视图层，jsp页面，包含html，css，javascript，img
+C：controller 控制层，servlet
+servlet只作三件事1、接受参数。2调用相应的service，3、返回结果（转发，重定向，response输出json）
+
+
+------使用Map替代实体类-----
+从本质上来讲，对象类型承载的数据，都是可以用map来替代
+map的优势在于好扩展。例如，我们的数据库字段增加了，那么对于实体类来说，就得修改代码
+但是对于map来说，知识增加一个键值对就可以。
+但是也不能完全替代了实体类，作为参数的时候，使用实体类，比使用map要好.
+以后，作为参数，需要用实体类，作为返回结果，可以用map或者List<Map>
+
+
+
+
+
+
+
+
